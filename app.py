@@ -15,9 +15,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CLEAN COMMERCIAL FINTECH CSS ---
+# --- CLEAN COMMERCIAL FINTECH CSS (NO WHITE LINES) ---
 st.markdown("""
 <style>
+    /* Remove Default Streamlit Header & Top White Lines */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+    }
+    [data-testid="stDecoration"] {
+        display: none !important;
+    }
+
     .stApp {
         background: radial-gradient(circle at top right, #111827, #0a0e17 65%);
         color: #f8fafc;
@@ -178,7 +186,6 @@ def calc_bs_greeks(S, K, T, r, sigma, opt_type):
 # --- INTRADAY 5-MIN TREND DETECTOR ---
 @st.cache_data(ttl=45, show_spinner=False)
 def fetch_intraday_trend(symbol):
-    """Checks 5-minute candles to see if short-term momentum is Bullish (above VWAP/EMA) or Bearish."""
     try:
         t = yf.Ticker(symbol)
         hist = t.history(period="2d", interval="5m")
@@ -458,10 +465,6 @@ def build_vertical_spreads(df_exp, spot, call_wall, put_wall, spread_width=5.0):
     return sp_df.sort_values(by='Edge_Score', ascending=False).drop(columns=['Edge_Score']).reset_index(drop=True)
 
 def evaluate_traffic_light_signal(play_full_df, spot, call_wall, put_wall, zero_gamma, trend_dir):
-    """
-    Translates all institutional GEX, Trend, and Option Flow data into a simple
-    3-Checkmark Traffic Light Signal: 'BUY CALL', 'BUY PUT', or 'WAIT / SPREAD'.
-    """
     scalps = play_full_df[
         (play_full_df['abs_delta'] >= 32) &
         (play_full_df['abs_delta'] <= 58) &
@@ -484,15 +487,13 @@ def evaluate_traffic_light_signal(play_full_df, spot, call_wall, put_wall, zero_
     call_flow_val = float(best_call['vol_oi_ratio']) if best_call is not None else 0.0
     put_flow_val = float(best_put['vol_oi_ratio']) if best_put is not None else 0.0
 
-    # --- BULLISH (CALL) 3 CHECKMARKS ---
     bull_1_zone = spot >= zero_gamma
-    bull_2_room = (call_wall - spot) >= (spot * 0.008)  # At least ~0.8% room to ceiling
+    bull_2_room = (call_wall - spot) >= (spot * 0.008)
     bull_3_flow = (call_flow_val >= put_flow_val) and (call_flow_val >= 0.35 or trend_dir == "BULLISH")
     bull_score = int(bull_1_zone) + int(bull_2_room) + int(bull_3_flow)
 
-    # --- BEARISH (PUT) 3 CHECKMARKS ---
     bear_1_zone = spot < zero_gamma
-    bear_2_room = (spot - put_wall) >= (spot * 0.008)  # At least ~0.8% room to floor
+    bear_2_room = (spot - put_wall) >= (spot * 0.008)
     bear_3_flow = (put_flow_val > call_flow_val) or (trend_dir == "BEARISH")
     bear_score = int(bear_1_zone) + int(bear_2_room) + int(bear_3_flow)
 
@@ -509,29 +510,22 @@ def evaluate_traffic_light_signal(play_full_df, spot, call_wall, put_wall, zero_
             ("✅ 3. Put Buying Flow", f"Heavy Put Flow ({put_flow_val:.2f}x Vol/OI) & Bearish Momentum")
         ]
     else:
-        # Decide which direction is closer (2 out of 3) so user knows exact price to wait for
         if bull_score >= bear_score and best_call is not None:
             checks = [
-                (f"{'✅' if bull_1_zone else '⏳'} 1. Price vs Trigger",
-                 f"{'Above' if bull_1_zone else f'Wait for break above'} ${zero_gamma:.2f}"),
-                (f"{'✅' if bull_2_room else '⚠️'} 2. Room to Ceiling",
-                 f"Target Ceiling is ${call_wall:.2f} ({((call_wall-spot)/spot)*100:+.1f}%)"),
-                (f"{'✅' if bull_3_flow else '⏳'} 3. Whale Option Flow",
-                 f"Call Vol/OI is {call_flow_val:.2f}x vs Put {put_flow_val:.2f}x")
+                (f"{'✅' if bull_1_zone else '⏳'} 1. Price vs Trigger", f"{'Above' if bull_1_zone else f'Wait for break above'} ${zero_gamma:.2f}"),
+                (f"{'✅' if bull_2_room else '⚠️'} 2. Room to Ceiling", f"Target Ceiling is ${call_wall:.2f} ({((call_wall-spot)/spot)*100:+.1f}%)"),
+                (f"{'✅' if bull_3_flow else '⏳'} 3. Whale Option Flow", f"Call Vol/OI is {call_flow_val:.2f}x vs Put {put_flow_val:.2f}x")
             ]
             return "WAIT_BULL", bull_score, best_call, checks
         else:
             checks = [
-                (f"{'✅' if bear_1_zone else '⏳'} 1. Price vs Trigger",
-                 f"{'Below' if bear_1_zone else f'Wait for break below'} ${zero_gamma:.2f}"),
-                (f"{'✅' if bear_2_room else '⚠️'} 2. Room to Floor",
-                 f"Target Floor is ${put_wall:.2f} ({((put_wall-spot)/spot)*100:+.1f}%)"),
-                (f"{'✅' if bear_3_flow else '⏳'} 3. Whale Option Flow",
-                 f"Put Vol/OI is {put_flow_val:.2f}x vs Call {call_flow_val:.2f}x")
+                (f"{'✅' if bear_1_zone else '⏳'} 1. Price vs Trigger", f"{'Below' if bear_1_zone else f'Wait for break below'} ${zero_gamma:.2f}"),
+                (f"{'✅' if bear_2_room else '⚠️'} 2. Room to Floor", f"Target Floor is ${put_wall:.2f} ({((put_wall-spot)/spot)*100:+.1f}%)"),
+                (f"{'✅' if bear_3_flow else '⏳'} 3. Whale Option Flow", f"Put Vol/OI is {put_flow_val:.2f}x vs Call {call_flow_val:.2f}x")
             ]
             return "WAIT_BEAR", bear_score, best_put, checks
 
-# --- SIDEBAR: SIMPLE USER-FRIENDLY CONTROLS ---
+# --- SIDEBAR CONTROLS ---
 st.sidebar.markdown("## 🚦 APEX // SIMPLE MODE")
 symbol = st.sidebar.text_input("1. Enter Stock Ticker", value="NVDA").upper().strip()
 
@@ -541,11 +535,7 @@ trade_style = st.sidebar.radio(
     index=0
 )
 
-if trade_style.startswith("⚡"):
-    min_dte, max_dte = 0, 14
-else:
-    min_dte, max_dte = 15, 45
-
+min_dte, max_dte = (0, 14) if trade_style.startswith("⚡") else (15, 45)
 spread_width = st.sidebar.selectbox("3. Spread Protection Width ($)", [2.5, 5.0, 10.0], index=1)
 
 with st.sidebar.expander("⚙️ Advanced Filters (Optional)", expanded=False):
@@ -556,7 +546,6 @@ with st.sidebar.expander("⚙️ Advanced Filters (Optional)", expanded=False):
 if st.sidebar.button("🔄 Refresh Signal Now", use_container_width=True, type="primary"):
     st.cache_data.clear()
 
-# --- FETCH LIVE DATA ---
 with st.spinner(f"Analyzing {symbol} signals, trend & whale flow..."):
     trend_dir, intraday_pct = fetch_intraday_trend(symbol)
     if data_source.startswith("CBOE"):
@@ -573,7 +562,6 @@ if err or raw_df is None or raw_df.empty:
 full_df = enrich_chain_metrics(raw_df, spot)
 available_exps = sorted(full_df['expiration'].unique())
 
-# Header
 st.markdown(f"""
 <div class="terminal-header">
     <div>
@@ -594,7 +582,6 @@ sig_state, sig_score, best_opt, check_items = evaluate_traffic_light_signal(
     exp_df, spot, call_wall, put_wall, zero_gamma, trend_dir
 )
 
-# --- TOP KPI MAP IN PLAIN ENGLISH ---
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Current Stock Price", f"${spot:.2f}", f"Intraday: {intraday_pct:+.2f}% ({trend_dir})")
 k2.metric("Bull / Bear Trigger Line", f"${zero_gamma:.2f}", "Above = Calls | Below = Puts")
@@ -603,7 +590,6 @@ k4.metric("Downside Support Floor", f"${put_wall:.2f}", f"{((put_wall - spot)/sp
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# --- GIANT TRAFFIC LIGHT HERO BANNER ---
 if sig_state == "BUY_CALL" and best_opt is not None:
     entry_p = float(best_opt['mid'])
     tp_p = entry_p * 1.25
@@ -672,7 +658,6 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-# --- TABS: SIMPLE CARDS FIRST, PRO CHARTS SECOND ---
 tab_simple, tab_pro_charts = st.tabs([
     "🎯 Best Trade Tickets (Simple View)",
     "📊 Pro Charts & Full Option Chain (Under the Hood)"
