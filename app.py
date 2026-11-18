@@ -15,20 +15,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CLEAN COMMERCIAL FINTECH CSS (NO WHITE LINES) ---
+# --- CSS DEFINITIVO: MODO OSCURO FORZADO Y CERO LÍNEAS BLANCAS ---
 st.markdown("""
 <style>
-    /* Remove Default Streamlit Header & Top White Lines */
+    /* Forzar fondo oscuro y colores en Streamlit Cloud */
+    [data-testid="stAppViewContainer"], .stApp {
+        background: radial-gradient(circle at top right, #111827, #0a0e17 65%) !important;
+        color: #f8fafc !important;
+    }
     header[data-testid="stHeader"] {
         background: transparent !important;
     }
     [data-testid="stDecoration"] {
         display: none !important;
-    }
-
-    .stApp {
-        background: radial-gradient(circle at top right, #111827, #0a0e17 65%);
-        color: #f8fafc;
     }
     section[data-testid="stSidebar"] {
         background-color: #0d1321 !important;
@@ -96,13 +95,13 @@ st.markdown("""
     .hero-headline {
         font-size: 1.9rem;
         font-weight: 900;
-        color: #ffffff;
+        color: #ffffff !important;
         margin: 0 0 6px 0;
         letter-spacing: 0.3px;
     }
     .hero-subtext {
         font-size: 1.02rem;
-        color: #e2e8f0;
+        color: #e2e8f0 !important;
         margin-bottom: 18px;
     }
 
@@ -130,11 +129,11 @@ st.markdown("""
         font-size: 1.05rem;
         font-weight: 800;
         margin-top: 4px;
-        color: #f8fafc;
+        color: #f8fafc !important;
     }
     .check-desc {
         font-size: 0.82rem;
-        color: #cbd5e1;
+        color: #cbd5e1 !important;
         margin-top: 3px;
     }
 
@@ -158,7 +157,7 @@ st.markdown("""
     .action-step-val {
         font-size: 1.2rem;
         font-weight: 900;
-        color: #ffffff;
+        color: #ffffff !important;
         margin-top: 2px;
     }
 
@@ -167,6 +166,12 @@ st.markdown("""
         border: 1px solid #1e293b;
         border-radius: 12px;
         padding: 12px 16px;
+    }
+    div[data-testid="stMetricLabel"] {
+        color: #94a3b8 !important;
+    }
+    div[data-testid="stMetricValue"] {
+        color: #f8fafc !important;
     }
 </style>
 """, unsafe_allow_html=True)
